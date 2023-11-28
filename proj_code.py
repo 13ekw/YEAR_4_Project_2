@@ -10,8 +10,42 @@ from matplotlib.ticker import AutoMinorLocator # for minor ticks
 
 import infofile # local file containing cross-sections, sums of weights, dataset IDs
 
+#global variables
+lumi = 10 # fb-1 # data_A,data_B,data_C,data_D
+fraction = 1.0 # reduce this is if you want the code to run quicker
+tuple_path = "https://atlas-opendata.web.cern.ch/atlas-opendata/samples/2020/4lep/" # web address
+
+samples = {
+
+    'data': {
+        'list' : ['data_A','data_B','data_C','data_D'],
+    },
+
+    r'Background $Z,t\bar{t}$' : { # Z + ttbar
+        'list' : ['Zee','Zmumu','ttbar_lep'],
+        'color' : "#6b59d3" # purple
+    },
+
+    r'Background $ZZ^*$' : { # ZZ
+        'list' : ['llll'],
+        'color' : "#ff0000" # red
+    },
+
+    r'Signal ($m_H$ = 125 GeV)' : { # H -> ZZ -> llll
+        'list' : ['ggH125_ZZ4lep','VBFH125_ZZ4lep','WH125_ZZ4lep','ZH125_ZZ4lep'],
+        'color' : "#00cdff" # light blue
+    },
+
+}
+
+#units, as stored in the data files
+MeV = 0.001
+GeV = 1.0
+
+
+
 #define function to get data from files, note already filtered to include at leadt 4 leptons per event
-def get_data_from_files(samples, tuple_path, MeV):
+def get_data_from_files():
 
     data = {} # define empty dictionary to hold awkward arrays
     for s in samples: # loop over samples
@@ -42,13 +76,13 @@ def calc_weight(xsec_weight, events):
 
 
 #define function to get cross-section weight
-def get_xsec_weight(sample, lumi):
+def get_xsec_weight(sample):
     info = infofile.infos[sample] # open infofile
     xsec_weight = (lumi*1000*info["xsec"])/(info["sumw"]*info["red_eff"]) #*1000 to go from fb-1 to pb-1
     return xsec_weight # return cross-section weight
 
 #define function to calculate 4-lepton invariant mass
-def calc_mllll(lep_pt, lep_eta, lep_phi, lep_E, MeV):
+def calc_mllll(lep_pt, lep_eta, lep_phi, lep_E):
     # construct awkward 4-vector array
     p4 = vector.zip({"pt": lep_pt, "eta": lep_eta, "phi": lep_phi, "E": lep_E})
     # calculate invariant mass of first 4 leptons
@@ -72,7 +106,7 @@ def cut_lep_type(lep_type):
     sum_lep_type = lep_type[:, 0] + lep_type[:, 1] + lep_type[:, 2] + lep_type[:, 3]
     return (sum_lep_type != 44) & (sum_lep_type != 48) & (sum_lep_type != 52)
 
-def read_file(path,sample, fraction, MeV):
+def read_file(path,sample):
     start = time.time() # start the clock
     print("\tProcessing: "+sample) # print which sample is being processed
     data_all = [] # define empty list to hold all data for this sample
@@ -103,7 +137,7 @@ def read_file(path,sample, fraction, MeV):
             data = data[~cut_lep_type(data.lep_type)]
 
             # calculation of 4-lepton invariant mass using the function calc_mllll defined above
-            data['mllll'] = calc_mllll(data.lep_pt, data.lep_eta, data.lep_phi, data.lep_E, MeV)
+            data['mllll'] = calc_mllll(data.lep_pt, data.lep_eta, data.lep_phi, data.lep_E)
 
             # array contents can be printed at any stage like this
             #print(data)
@@ -122,7 +156,7 @@ def read_file(path,sample, fraction, MeV):
     return ak.concatenate(data_all) # return array containing events passing all cuts
 
 #define function to plot the data
-def plot_data(data, GeV, samples, lumi, fraction):
+def plot_data(data):
 
     xmin = 80 * GeV
     xmax = 250 * GeV
@@ -245,39 +279,10 @@ def plot_data(data, GeV, samples, lumi, fraction):
 
     # draw the legend
     main_axes.legend( frameon=False ) # no box around the legend
-    
+    plt.savefig("output.png")
+
     return
 
 def main():
-    lumi = 10 # fb-1 # data_A,data_B,data_C,data_D
-    fraction = 1.0 # reduce this is if you want the code to run quicker
-    tuple_path = "https://atlas-opendata.web.cern.ch/atlas-opendata/samples/2020/4lep/" # web address
-
-    samples = {
-
-        'data': {
-            'list' : ['data_A','data_B','data_C','data_D'],
-        },
-
-        r'Background $Z,t\bar{t}$' : { # Z + ttbar
-            'list' : ['Zee','Zmumu','ttbar_lep'],
-            'color' : "#6b59d3" # purple
-        },
-
-        r'Background $ZZ^*$' : { # ZZ
-            'list' : ['llll'],
-            'color' : "#ff0000" # red
-        },
-
-        r'Signal ($m_H$ = 125 GeV)' : { # H -> ZZ -> llll
-            'list' : ['ggH125_ZZ4lep','VBFH125_ZZ4lep','WH125_ZZ4lep','ZH125_ZZ4lep'],
-            'color' : "#00cdff" # light blue
-        },
-
-    }
-
-    #units, as stored in the data files
-    MeV = 0.001
-    GeV = 1.0
-    data = get_data_from_files(samples, tuple_path, MeV) # process all files
-    plot_data(data, GeV, samples, lumi, fraction)
+    data = get_data_from_files() # process all files
+    plot_data(data)
