@@ -1,17 +1,7 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# <CENTER><img src="../../images/ATLASOD.gif" style="width:50%"></CENTER>
-
 # # How to rediscover the Higgs boson yourself!
 # This notebook uses ATLAS Open Data http://opendata.atlas.cern to show you the steps to rediscover the Higgs boson yourself!
 # 
 # ATLAS Open Data provides open access to proton-proton collision data at the LHC for educational purposes. ATLAS Open Data resources are ideal for high-school, undergraduate and postgraduate students.
-# 
-# Notebooks are web applications that allow you to create and share documents that can contain for example:
-# 1. live code
-# 2. visualisations
-# 3. narrative text
 # 
 # The idea is that cuts increase the ratio of signal ($H \rightarrow ZZ \rightarrow \ell\ell\ell\ell$) to background ($Z, t\bar{t}, ZZ \rightarrow \ell\ell\ell\ell$)
 # 
@@ -28,70 +18,13 @@
 # 2. know some general principles of a particle physics analysis
 # 
 # Feynman diagram pictures are borrowed from our friends at https://www.particlezoo.net
-
-# <CENTER><img src="images/feynman_diagrams/HZZ_feynman.png" style="width:40%"></CENTER>
-
-# <a id='contents'></a>
-
-# Contents: 
-# 
-# [Running a Jupyter notebook](#running) <br />
-# [First time setup on your computer (no need on mybinder)](#setup_computer) <br />
-# [To setup everytime](#setup_everytime) <br />
-# [Lumi, fraction, file path](#fraction) <br />
-# [Samples](#samples) <br />
-# [Changing a cut](#changing_cut) <br />
-# [Applying a cut](#applying_cut) <br />
-# [Plotting](#plotting) <br />
-# [What can you do to explore this analysis?](#going_further) <br />
-
-# <a id='running'></a>
-
-# ## Running a Jupyter notebook
-# 
-# To run the whole Jupyter notebook, in the top menu click Cell -> Run All.
-# 
-# To propagate a change you've made to a piece of code, click Cell -> Run All Below.
-# 
-# You can also run a single code cell, by clicking Cell -> Run Cells, or using the keyboard shortcut Shift+Enter.
-
-# <a id='setup_computer'></a>
-
-# ## First time setup on your computer (no need on mybinder)
-# This first cell only needs to be run the first time you open this notebook on your computer. 
-# 
-# If you close Jupyter and re-open on the same computer, you won't need to run this first cell again.
-# 
-# If you open on mybinder, you don't need to run this cell.
-
-# In[1]:
-
-
-#import sys
-# update the pip package installer
-#!{sys.executable} -m pip install --upgrade --user pip
-# install required packages
-#get_ipython().system('{sys.executable} -m pip install --upgrade --user uproot awkward vector numpy matplotlib')
-
-
-# [Back to contents](#contents)
-
-# <a id='setup_everytime'></a>
-
-# ## To setup everytime
-# Cell -> Run All Below
-# 
-# to be done every time you re-open this notebook
-# 
+ 
 # We're going to be using a number of tools to help us:
 # * uproot: lets us read .root files typically used in particle physics into data formats used in python
 # * awkward: lets us store data as awkward arrays, a format that generalizes numpy to nested data with possibly variable length lists
 # * vector: to allow vectorized 4-momentum calculations
 # * numpy: provides numerical calculations such as histogramming
 # * matplotlib: common tool for making plots, figures, images, visualisations
-
-# In[2]:
-
 
 import uproot # for reading .root files
 import awkward as ak # to represent nested data in columnar format
@@ -104,17 +37,8 @@ from matplotlib.ticker import AutoMinorLocator # for minor ticks
 
 import infofile # local file containing cross-sections, sums of weights, dataset IDs
 
-
-# [Back to contents](#contents)
-
-# <a id='fraction'></a>
-
-# ## Lumi, fraction, file path
-# 
+ 
 # General definitions of fraction of data used, where to access the input files
-
-# In[ ]:
-
 
 #lumi = 0.5 # fb-1 # data_A only
 #lumi = 1.9 # fb-1 # data_B only
@@ -127,16 +51,7 @@ fraction = 1.0 # reduce this is if you want the code to run quicker
 #tuple_path = "Input/4lep/" # local 
 tuple_path = "https://atlas-opendata.web.cern.ch/atlas-opendata/samples/2020/4lep/" # web address
 
-
-# <a id='samples'></a>
-
-# ## Samples
-# 
 # samples to process
-
-# In[ ]:
-
-
 samples = {
 
     'data': {
@@ -162,23 +77,12 @@ samples = {
 
 
 # Units, as stored in the data files
-
-# In[ ]:
-
-
 MeV = 0.001
 GeV = 1.0
 
 
-# [Back to contents](#contents)
-
 # Define function to get data from files.
-# 
 # The datasets used in this notebook have already been filtered to include at least 4 leptons per event, so that processing is quicker.
-
-# In[ ]:
-
-
 def get_data_from_files():
 
     data = {} # define empty dictionary to hold awkward arrays
@@ -197,12 +101,7 @@ def get_data_from_files():
     return data # return dictionary of awkward arrays
 
 
-# [Back to contents](#contents)
-
 # define function to calculate weight of MC event
-
-# In[ ]:
-
 
 def calc_weight(xsec_weight, events):
     return (
@@ -216,10 +115,6 @@ def calc_weight(xsec_weight, events):
 
 
 # define function to get cross-section weight
-
-# In[ ]:
-
-
 def get_xsec_weight(sample):
     info = infofile.infos[sample] # open infofile
     xsec_weight = (lumi*1000*info["xsec"])/(info["sumw"]*info["red_eff"]) #*1000 to go from fb-1 to pb-1
@@ -227,12 +122,6 @@ def get_xsec_weight(sample):
 
 
 # define function to calculate 4-lepton invariant mass.
-# 
-# Note: `lep_(pt|eta|phi|E)` are variable length lists of lepton momentum components for each event, represented by awkward arrays.
-
-# In[ ]:
-
-
 def calc_mllll(lep_pt, lep_eta, lep_phi, lep_E):
     # construct awkward 4-vector array
     p4 = vector.zip({"pt": lep_pt, "eta": lep_eta, "phi": lep_phi, "E": lep_E})
@@ -241,20 +130,7 @@ def calc_mllll(lep_pt, lep_eta, lep_phi, lep_E):
     # .M calculates the invariant mass
     return (p4[:, 0] + p4[:, 1] + p4[:, 2] + p4[:, 3]).M * MeV
 
-
-# [Back to contents](#contents)
-
-# <a id='changing_cut'></a>
-
 # ## Changing a cut
-# 
-# If you change a cut: Cell -> Run All Below
-# 
-# If you change a cut here, you also need to make sure the cut is applied in the "[Applying a cut](#applying_cut)" cell.
-
-# In[ ]:
-
-
 # cut on lepton charge
 # paper: "selecting two pairs of isolated leptons, each of which is comprised of two leptons with the same flavour and opposite charge"
 def cut_lep_charge(lep_charge):
@@ -270,17 +146,6 @@ def cut_lep_type(lep_type):
 # throw away when none of eeee, mumumumu, eemumu
     sum_lep_type = lep_type[:, 0] + lep_type[:, 1] + lep_type[:, 2] + lep_type[:, 3]
     return (sum_lep_type != 44) & (sum_lep_type != 48) & (sum_lep_type != 52)
-
-
-# [Back to contents](#contents)
-
-# <a id='applying_cut'></a>
-
-# ## Applying a cut
-# If you add a cut: Cell -> Run All Below
-
-# In[ ]:
-
 
 def read_file(path,sample):
     start = time.time() # start the clock
@@ -332,31 +197,13 @@ def read_file(path,sample):
     return ak.concatenate(data_all) # return array containing events passing all cuts
 
 
-# [Back to contents](#contents)
-
 # This is where the processing happens
-
-# In[ ]:
-
-
 start = time.time() # time at start of whole processing
 data = get_data_from_files() # process all files
 elapsed = time.time() - start # time after whole processing
 print("Time taken: "+str(round(elapsed,1))+"s") # print total time taken to process every file
 
-
-# [Back to contents](#contents)
-
-# <a id='plotting'></a>
-
-# ## Plotting
-# If you only want to make a change in plotting: Cell -> Run All Below
-# 
 # Define function to plot the data
-
-# In[ ]:
-
-
 def plot_data(data):
 
     xmin = 80 * GeV
@@ -484,30 +331,6 @@ def plot_data(data):
 
     return
 
-
-# [Back to contents](#contents)
-
 # Call the function to plot the data
-
-# In[ ]:
-
-
 plot_data(data)
 
-
-# [Back to contents](#contents)
-
-# <a id='going_further'></a>
-
-# ## What can you do to explore this analysis?
-# 
-# * Increase the fraction of data used in '[Lumi, fraction, file path](#fraction)'
-# * Check how many events are being thrown away by each cut in '[Applying a cut](#applying_cut)'
-# * Add more cuts from the [Higgs discovery paper](https://www.sciencedirect.com/science/article/pii/S037026931200857X#se0040) in '[Changing a cut](#changing_cut)' and '[Applying a cut](#applying_cut)'
-# * Add a plot to show the ratio between Data and MC other than Higgs
-# * Add a plot to show the invariant mass distribution of the sub-leading lepton pair, like [Figure 1 of the Higgs discovery paper](https://www.sciencedirect.com/science/article/pii/S037026931200857X#fg0010)
-# * Get the estimated numbers of events, like [Table 3 of the Higgs discovery paper](https://www.sciencedirect.com/science/article/pii/S037026931200857X#tl0030)
-# * Add a plot of m12 against m34, like [Figure 3 of the Higgs discovery paper](https://www.sciencedirect.com/science/article/pii/S037026931200857X#fg0030)
-# * Your idea!
-
-# [Back to contents](#contents)

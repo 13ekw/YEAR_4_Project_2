@@ -2,8 +2,9 @@
 FROM python:latest
 # add our python program
 ADD HZZAnalysis.py ./
+ADD infofile.py ./
 # install dependent libraries
 RUN pip install numpy matplotlib uproot awkward vector
 # the command to run our program
-CMD [ "python", "./HZZAnalysis.py"]
+CMD [ "python", "./HZZAnalysis.py", "-o", "output.png"]
 
