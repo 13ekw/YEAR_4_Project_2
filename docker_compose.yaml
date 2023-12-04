@@ -1,0 +1,32 @@
+services:
+  
+  inputter:
+    image: 127.0.0.1:5000/inputter
+    build: inputter/.
+    networks:
+      - network_1
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    networks:
+      - network_1
+
+  worker:
+    image: 127.0.0.1:5000/worker
+    build: worker/.
+    networks:
+      - network_1
+    
+  outputter:
+    image: 127.0.0.1:5000/outputter
+    build: outputter/.
+    networks:
+      - network_1
+
+networks:
+  network_1:
+    driver: overlay
+    attachable: true
