@@ -41,14 +41,14 @@ data = []  # initialize empty awkard array called data
 BackgroundZt = []
 BackgroundZZ = []
 Signal = []
-counter = 1
 
-def callback(ch, method, properties, body):
+def callback(ch, method, properties, body):    
     global counter
     body = pickle.loads(body)
-    print('OUTPUTTER Received Data')
     val = body[-1]
     body = body[:-1]
+    print('OUTPUTTER Received ' + val)
+
     if val in samples['data']['list']:
         data.append(ak.Array(body))
     elif val in samples[r'Background $Z,t\bar{t}$']['list']:
@@ -59,12 +59,16 @@ def callback(ch, method, properties, body):
         Signal.append(ak.Array(body))
     counter += 1
     if counter == count_elements(samples):
+        channel.stop_consuming()
         data_concat = ak.concatenate(data)
         BackgroundZt_concat = ak.concatenate(BackgroundZt)
         BackgroundZZ_concat = ak.concatenate(BackgroundZZ)
         Signal_concat = ak.concatenate(Signal)
         data_to_plot = ak.concatenate([data_concat, BackgroundZt_concat, BackgroundZZ_concat, Signal_concat])
+        print("Plotting data")
         plot_data(data_to_plot)
+
+counter = 0
 
 params = pika.ConnectionParameters('year_4_project_2-rabbitmq-1')
 connection = pika.BlockingConnection(params)
