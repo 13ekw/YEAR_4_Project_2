@@ -1,0 +1,57 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    networks:
+      - network_1
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  inputter:
+    image: 127.0.0.1:5000/inputter
+    build: 
+      context: ./
+      dockerfile: ./inputter/Dockerfile
+    networks:
+      - network_1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+        restart: true
+
+  worker:
+    image: 127.0.0.1:5000/worker
+    deploy:
+      mode: replicated
+      replicas: 1
+    build: 
+      context: ./
+      dockerfile: ./worker/Dockerfile
+    networks:
+      - network_1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+        restart: true
+
+  outputter:
+    image: 127.0.0.1:5000/outputter
+    build: 
+      context: ./
+      dockerfile: ./outputter/Dockerfile
+    networks:
+      - network_1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+        restart: true
+
+networks:
+  network_1:
+    driver: overlay
+    attachable: true
