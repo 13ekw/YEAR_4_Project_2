@@ -13,39 +13,45 @@ services:
       retries: 3
 
   inputter:
-    image: 127.0.0.1:5000/inputter
+    image: inputter
     build: 
       context: ./
       dockerfile: ./inputter/Dockerfile
     networks:
       - network_1
+    stdin_open: true
+    tty: true
     depends_on:
       rabbitmq:
         condition: service_healthy
         restart: true
 
   worker:
-    image: 127.0.0.1:5000/worker
+    image: worker
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 3
     build: 
       context: ./
       dockerfile: ./worker/Dockerfile
     networks:
       - network_1
+    stdin_open: true
+    tty: true
     depends_on:
       rabbitmq:
         condition: service_healthy
         restart: true
 
   outputter:
-    image: 127.0.0.1:5000/outputter
+    image: outputter
     build: 
       context: ./
       dockerfile: ./outputter/Dockerfile
     networks:
       - network_1
+    stdin_open: true
+    tty: true
     depends_on:
       rabbitmq:
         condition: service_healthy
