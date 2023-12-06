@@ -35,10 +35,11 @@ for s in samples: # loop over samples
         fileString = prefix+" "+val # file name to open
         list_filestring.append(fileString)
 
-params = pika.ConnectionParameters('rabbitmq')
+params = pika.ConnectionParameters('year_4_project_2-rabbitmq-1')
 connection = pika.BlockingConnection(params)
 channel = connection.channel()
-channel.queue_declare(queue='filestrings')
+channel.queue_declare(queue='filestring')
 
 for i in list_filestring:
-    channel.basic_publish(exchange='', routing_key='filestrings', body=i)
+    channel.basic_publish(exchange='', routing_key='filestring', body=i)
+    print("INPUTTER Sent "+i)

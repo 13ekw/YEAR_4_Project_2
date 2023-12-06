@@ -1,6 +1,8 @@
 import pika
 import awkward as ak
 import numpy as np
+import math
+import pickle
 import matplotlib.pyplot as plt # for plotting
 from matplotlib.ticker import AutoMinorLocator # for minor ticks
 
@@ -39,10 +41,12 @@ data = []  # initialize empty awkard array called data
 BackgroundZt = []
 BackgroundZZ = []
 Signal = []
-counter = 0
+counter = 1
 
 def callback(ch, method, properties, body):
-    body = body.decode("utf-8")
+    global counter
+    body = pickle.loads(body)
+    print('OUTPUTTER Received Data')
     val = body[-1]
     body = body[:-1]
     if val in samples['data']['list']:
@@ -62,7 +66,7 @@ def callback(ch, method, properties, body):
         data_to_plot = ak.concatenate([data_concat, BackgroundZt_concat, BackgroundZZ_concat, Signal_concat])
         plot_data(data_to_plot)
 
-params = pika.ConnectionParameters('rabbitmq')
+params = pika.ConnectionParameters('year_4_project_2-rabbitmq-1')
 connection = pika.BlockingConnection(params)
 channel = connection.channel()
 channel.queue_declare(queue='output')
@@ -181,9 +185,10 @@ def plot_data(data):
     lumi_used = str(lumi*fraction) # luminosity to write on the plot
     plt.text(0.05, # x
              0.82, # y
-             '$\sqrt{s}$=13 TeV,$\int$L dt = '+lumi_used+' fb$^{-1}$', # text
              transform=main_axes.transAxes ) # coordinate system used is that of main_axes
-    
+
+#DELETED LINE 186: '$\sqrt{s}$=13 TeV,$\int$L dt = '+lumi_used+' fb$^{-1}$', # text
+
     # Add a label for the analysis carried out
     plt.text(0.05, # x
              0.76, # y

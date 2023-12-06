@@ -2,6 +2,8 @@ import uproot # for reading .root files
 import awkward as ak # to represent nested data in columnar format
 import vector # for 4-momentum calculations
 import pika
+import time
+import pickle
 import infofile # local file containing cross-sections, sums of weights, dataset IDs
 
 tuple_path = "https://atlas-opendata.web.cern.ch/atlas-opendata/samples/2020/4lep/" # web address
@@ -9,25 +11,16 @@ tuple_path = "https://atlas-opendata.web.cern.ch/atlas-opendata/samples/2020/4le
 
 def callback(ch, method, properties, body):
     body = body.decode("utf-8")
+    print('WORKER Received '+body)
     prefix_val = body.split()
     prefix = prefix_val[0]
     val = prefix_val[1]
     url = tuple_path+prefix+val+".4lep.root" # file name to open
     temp = read_file(url,val)
     temp.append(val)
+    temp = pickle.dumps(temp)
     channel.basic_publish(exchange='', routing_key='output', body=temp)
-
-
-
-
-params = pika.ConnectionParameters('rabbitmq')
-connection = pika.BlockingConnection(params)
-channel = connection.channel()
-channel.queue_declare(queue='filestrings')
-channel.basic_consume(queue='filestring', auto_ack=True, on_message_callback=callback)
-channel.queue_declare(queue='output')
-channel.start_consuming()
-
+    print(" WORKER Sent " + val)
 
 # General definitions of fraction of data used, where to access the input files
 
@@ -138,7 +131,15 @@ def read_file(path,sample):
             nOut = len(data) # number of events passing cuts in this batch
             data_all.append(data) # append array from this batch
             elapsed = time.time() - start # time taken to process
-            print("\t\t nIn: "+str(nIn)+",\t nOut: \t"+str(nOut)+"\t in "+str(round(elapsed,1))+"s") # events before and after
+            #print("\t\t nIn: "+str(nIn)+",\t nOut: \t"+str(nOut)+"\t in "+str(round(elapsed,1))+"s") # events before and after
     
         data_final = ak.concatenate(data_all) # return array containing events passing all cuts
     return data_final.to_list()
+
+params = pika.ConnectionParameters('year_4_project_2-rabbitmq-1')
+connection = pika.BlockingConnection(params)
+channel = connection.channel()
+channel.queue_declare(queue='filestring')
+channel.basic_consume(queue='filestring', auto_ack=True, on_message_callback=callback)
+channel.queue_declare(queue='output')
+channel.start_consuming()
