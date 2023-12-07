@@ -2,13 +2,14 @@ import uproot # for reading .root files
 import awkward as ak # to represent nested data in columnar format
 import vector # for 4-momentum calculations
 import pika
+import json
+import zlib
 import time
-import pickle
 import infofile # local file containing cross-sections, sums of weights, dataset IDs
 
 tuple_path = "https://atlas-opendata.web.cern.ch/atlas-opendata/samples/2020/4lep/" # web address of data
 lumi = 10 # fb-1 # data_A,data_B,data_C,data_D
-fraction = 0.1 # reduce this is if you want the code to run quicker
+fraction = 1.0 # reduce this is if you want the code to run quicker
 MeV = 0.001 # Units, as stored in the data files
 
 # define function to calculate weight of MC event
@@ -130,10 +131,11 @@ def callback(ch, method, properties, body):
     # Read the file and append the value
     temp = read_file(url,val)
     temp.append(val)
-    # Serialize the data using pickle
-    temp = pickle.dumps(temp)
+    temp_json = json.dumps(temp)
+    temp_json = zlib.compress(temp_json.encode('utf-8'))
+
     # Publish the serialized data to the 'output' queue
-    channel.basic_publish(exchange='', routing_key='output', body=temp)
+    channel.basic_publish(exchange='', routing_key='output', body=temp_json)
     #print statements to check the data is being sent
     print(" WORKER Sent " + val)
 

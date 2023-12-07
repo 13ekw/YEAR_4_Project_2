@@ -2,8 +2,8 @@ import pika
 import awkward as ak
 import numpy as np
 import math
-import pickle
 import json
+import zlib
 import matplotlib.pyplot as plt # for plotting
 from matplotlib.ticker import AutoMinorLocator # for minor ticks
 
@@ -15,7 +15,7 @@ with open('samples.json') as json_file:
 data_final = {key: [] for key in samples.keys()}
 
 #declare variables
-fraction = 0.1
+fraction = 1.0
 GeV = 1.0
 lumi = 10 # fb-1 # data_A,data_B,data_C,data_D
 #note lumi will likely change if new data is added
@@ -30,8 +30,9 @@ def count_elements(samples):
 
 def callback(ch, method, properties, body):    
     global counter
-    #decodes the data, stores and removes the last element which is the category
-    body = pickle.loads(body)
+    #decompresses and decodes the data, stores and removes the last element which is the category
+    body = zlib.decompress(body)
+    body = json.loads(body)
     val = body[-1]
     body = body[:-1]
 
@@ -60,7 +61,7 @@ def callback(ch, method, properties, body):
         plot_data(data_final)
 
 def plot_data(data):
-
+    print("INSIDE PLOTTING FUNCTION")
     xmin = 80 * GeV
     xmax = 250 * GeV
     step_size = 5 * GeV
@@ -171,7 +172,7 @@ def plot_data(data):
     lumi_used = str(lumi*fraction) # luminosity to write on the plot
     plt.text(0.05, # x
              0.82, # y
-             '$\sqrt{s}$=13 TeV,$\int$L dt = '+lumi_used+' fb$^{-1}$', # text
+             r'$\sqrt{s}$=13 TeV,$\int$L dt = '+lumi_used+' fb$^{-1}$', # text
              transform=main_axes.transAxes ) # coordinate system used is that of main_axes
 
     # Add a label for the analysis carried out
@@ -182,9 +183,8 @@ def plot_data(data):
 
     # draw the legend
     main_axes.legend( frameon=False ) # no box around the legend
-    plt.savefig("app/data/output.png")
-
-    return
+    plt.savefig("/app/data/output.png")
+    print("SAVED FILE")
 
 counter = 0
 
