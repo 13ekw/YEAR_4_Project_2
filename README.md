@@ -8,4 +8,10 @@ This code is based on the [HZZAnalysis](https://github.com/atlas-outreach-data-t
 It used [ATLAS Open Data](http://opendata.atlas.cern) of proton-proton collisions at teh LHC 
 
 ## HOW TO RUN
+1) Clone this repo onto your local machine
+2) Navigate to where you have cloned this repo to
+3) OPTIONAL alter the number of workers by changing the number of replicas on line 33 of the docker-compose yaml file.
+4) From the Terminal write "docker-compose up"
 
+You will now see the print statments on the terminal showing the message passing.
+Once the Program is complete the output plot will be saved to the folder you are in
