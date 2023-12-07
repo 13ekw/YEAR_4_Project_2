@@ -1,28 +1,10 @@
 import infofile # local file containing cross-sections, sums of weights, dataset IDs
+import json
 import pika
 
-samples = {
-
-    'data': {
-        'list' : ['data_A','data_B','data_C','data_D'],
-    },
-
-    r'Background $Z,t\bar{t}$' : { # Z + ttbar
-        'list' : ['Zee','Zmumu','ttbar_lep'],
-        'color' : "#6b59d3" # purple
-    },
-
-    r'Background $ZZ^*$' : { # ZZ
-        'list' : ['llll'],
-        'color' : "#ff0000" # red
-    },
-
-    r'Signal ($m_H$ = 125 GeV)' : { # H -> ZZ -> llll
-        'list' : ['ggH125_ZZ4lep','VBFH125_ZZ4lep','WH125_ZZ4lep','ZH125_ZZ4lep'],
-        'color' : "#00cdff" # light blue
-    },
-
-}
+#opens samples.json file and makes a dictionary of the samples
+with open('samples.json') as json_file:
+    samples = json.load(json_file)
 
 list_filestring = [] # define empty list to hold filestrings
 for s in samples: # loop over samples
@@ -35,11 +17,17 @@ for s in samples: # loop over samples
         fileString = prefix+" "+val # file name to open
         list_filestring.append(fileString)
 
+# Establishing a connection to the RabbitMQ server using the specified parameters
 params = pika.ConnectionParameters('year_4_project_2-rabbitmq-1')
 connection = pika.BlockingConnection(params)
+# Creating a channel for communication with the RabbitMQ server
 channel = connection.channel()
+# Declaring a queue named 'filestring' to receive messages
 channel.queue_declare(queue='filestring')
 
+#loop through list of filestrings
 for i in list_filestring:
+    #send filestring to filestring queue
     channel.basic_publish(exchange='', routing_key='filestring', body=i)
+    #print statements to check the data is being sent
     print("INPUTTER Sent "+i)

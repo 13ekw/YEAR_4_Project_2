@@ -6,22 +6,12 @@ import time
 import pickle
 import infofile # local file containing cross-sections, sums of weights, dataset IDs
 
-tuple_path = "https://atlas-opendata.web.cern.ch/atlas-opendata/samples/2020/4lep/" # web address
-
+tuple_path = "https://atlas-opendata.web.cern.ch/atlas-opendata/samples/2020/4lep/" # web address of data
 lumi = 10 # fb-1 # data_A,data_B,data_C,data_D
-
 fraction = 0.1 # reduce this is if you want the code to run quicker
-
-# Units, as stored in the data files
-MeV = 0.001
-
-
-
-# call the function read_file defined below
-#save temp to volume with name of end of filestring
+MeV = 0.001 # Units, as stored in the data files
 
 # define function to calculate weight of MC event
-
 def calc_weight(xsec_weight, events):
     return (
         xsec_weight
@@ -32,13 +22,11 @@ def calc_weight(xsec_weight, events):
         * events.scaleFactor_LepTRIGGER
     )
 
-
 # define function to get cross-section weight
 def get_xsec_weight(sample):
     info = infofile.infos[sample] # open infofile
     xsec_weight = (lumi*1000*info["xsec"])/(info["sumw"]*info["red_eff"]) #*1000 to go from fb-1 to pb-1
     return xsec_weight # return cross-section weight
-
 
 # define function to calculate 4-lepton invariant mass.
 def calc_mllll(lep_pt, lep_eta, lep_phi, lep_E):
@@ -49,7 +37,6 @@ def calc_mllll(lep_pt, lep_eta, lep_phi, lep_E):
     # .M calculates the invariant mass
     return (p4[:, 0] + p4[:, 1] + p4[:, 2] + p4[:, 3]).M * MeV
 
-# ## Changing a cut
 # cut on lepton charge
 # paper: "selecting two pairs of isolated leptons, each of which is comprised of two leptons with the same flavour and opposite charge"
 def cut_lep_charge(lep_charge):
@@ -116,29 +103,43 @@ def read_file(path,sample):
         data_final = ak.concatenate(data_all) # return array containing events passing all cuts
     return data_final.to_list()
 
+# Establish a connection to the RabbitMQ server
 params = pika.ConnectionParameters('year_4_project_2-rabbitmq-1')
 connection = pika.BlockingConnection(params)
+# Create a channel for communication
 channel = connection.channel()
+# Declare a queue named 'filestring'
 channel.queue_declare(queue='filestring')
-
 # Set QoS to limit the number of unacknowledged messages to 1
 channel.basic_qos(prefetch_count=1)
 
+# Define the callback function to handle received messages
 def callback(ch, method, properties, body):
+    # Acknowledge the message received
     channel.basic_ack(delivery_tag=method.delivery_tag)
-
+    # Decode the message body
     body = body.decode("utf-8")
+    #print statements to check the data is being received
     print('WORKER Received '+body)
+    # Split the message into prefix and value
     prefix_val = body.split()
     prefix = prefix_val[0]
     val = prefix_val[1]
-    url = tuple_path+prefix+val+".4lep.root" # file name to open
+    # Construct the URL to the .root file
+    url = tuple_path+prefix+val+".4lep.root"
+    # Read the file and append the value
     temp = read_file(url,val)
     temp.append(val)
+    # Serialize the data using pickle
     temp = pickle.dumps(temp)
+    # Publish the serialized data to the 'output' queue
     channel.basic_publish(exchange='', routing_key='output', body=temp)
+    #print statements to check the data is being sent
     print(" WORKER Sent " + val)
 
+# Set up a consumer to receive messages from the 'filestring' queue
 channel.basic_consume(queue='filestring', auto_ack=False, on_message_callback=callback)
+# Declare the 'output' queue
 channel.queue_declare(queue='output')
+# Start consuming messages from the 'filestring' queue
 channel.start_consuming()

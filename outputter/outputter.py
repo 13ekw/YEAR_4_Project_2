@@ -3,10 +3,24 @@ import awkward as ak
 import numpy as np
 import math
 import pickle
+import json
 import matplotlib.pyplot as plt # for plotting
 from matplotlib.ticker import AutoMinorLocator # for minor ticks
 
+#opens samples.json file and makes a dictionary of the samples
+with open('samples.json') as json_file:
+    samples = json.load(json_file)
 
+#initalises and empty dictionary to hold the data
+data_final = {key: [] for key in samples.keys()}
+
+#declare variables
+fraction = 0.1
+GeV = 1.0
+lumi = 10 # fb-1 # data_A,data_B,data_C,data_D
+#note lumi will likely change if new data is added
+
+#counts the number of elements in the samples dictionary
 def count_elements(samples):
     count = 0
     for section in samples.values():
@@ -14,39 +28,18 @@ def count_elements(samples):
             count += len(section['list'])
     return count
 
-samples = {
-
-    'data': {
-        'list' : ['data_A','data_B','data_C','data_D'],
-    },
-
-    r'Background $Z,t\bar{t}$' : { # Z + ttbar
-        'list' : ['Zee','Zmumu','ttbar_lep'],
-        'color' : "#6b59d3" # purple
-    },
-
-    r'Background $ZZ^*$' : { # ZZ
-        'list' : ['llll'],
-        'color' : "#ff0000" # red
-    },
-
-    r'Signal ($m_H$ = 125 GeV)' : { # H -> ZZ -> llll
-        'list' : ['ggH125_ZZ4lep','VBFH125_ZZ4lep','WH125_ZZ4lep','ZH125_ZZ4lep'],
-        'color' : "#00cdff" # light blue
-    },
-
-}
-data_final = {key: [] for key in samples.keys()}
-fraction = 0.1
-GeV = 1.0
-
 def callback(ch, method, properties, body):    
     global counter
+    #decodes the data, stores and removes the last element which is the category
     body = pickle.loads(body)
     val = body[-1]
     body = body[:-1]
+
+    #print statements to check the data is being received
     print('OUTPUTTER Received ' + val)
     print("COUNTER = " + str(counter))
+
+    #sorts the data into the correct category
     if val in samples['data']['list']:
         data_final['data'].append(ak.Array(body))
     elif val in samples[r'Background $Z,t\bar{t}$']['list']:
@@ -55,7 +48,10 @@ def callback(ch, method, properties, body):
         data_final[r'Background $ZZ^*$'].append(ak.Array(body))
     elif val in samples['Signal ($m_H$ = 125 GeV)']['list']:
         data_final[r'Signal ($m_H$ = 125 GeV)'].append(ak.Array(body))
+    
     counter += 1
+
+    #checks if all the data has been received, if so concatinates and plots
     if counter == count_elements(samples):
         for category,data in data_final.items():
             data_final[category] = ak.concatenate(data)
@@ -175,9 +171,8 @@ def plot_data(data):
     lumi_used = str(lumi*fraction) # luminosity to write on the plot
     plt.text(0.05, # x
              0.82, # y
+             '$\sqrt{s}$=13 TeV,$\int$L dt = '+lumi_used+' fb$^{-1}$', # text
              transform=main_axes.transAxes ) # coordinate system used is that of main_axes
-
-#DELETED LINE 186: '$\sqrt{s}$=13 TeV,$\int$L dt = '+lumi_used+' fb$^{-1}$', # text
 
     # Add a label for the analysis carried out
     plt.text(0.05, # x
@@ -187,16 +182,22 @@ def plot_data(data):
 
     # draw the legend
     main_axes.legend( frameon=False ) # no box around the legend
-    plt.savefig("output.png")
+    plt.savefig("app/data/output.png")
 
     return
 
 counter = 0
 
+# Establishing a connection to the RabbitMQ server using the specified parameters
 params = pika.ConnectionParameters('year_4_project_2-rabbitmq-1')
 connection = pika.BlockingConnection(params)
+# Creating a channel for communication with the RabbitMQ server
 channel = connection.channel()
+# Declaring a queue named 'output' to receive messages
 channel.queue_declare(queue='output')
+# Setting up a consumer to receive messages from the 'output' queue
+# The 'callback' function will be called for each received message
 channel.basic_consume(queue='output', auto_ack=True, on_message_callback=callback)
+# Start consuming messages from the 'output' queue
 channel.start_consuming()
 
