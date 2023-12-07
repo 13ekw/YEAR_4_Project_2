@@ -10,11 +10,11 @@ tuple_path = "https://atlas-opendata.web.cern.ch/atlas-opendata/samples/2020/4le
 
 lumi = 10 # fb-1 # data_A,data_B,data_C,data_D
 
-fraction = 1.0 # reduce this is if you want the code to run quicker
+fraction = 0.1 # reduce this is if you want the code to run quicker
 
 # Units, as stored in the data files
 MeV = 0.001
-GeV = 1.0
+
 
 
 # call the function read_file defined below

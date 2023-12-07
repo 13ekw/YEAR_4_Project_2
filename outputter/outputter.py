@@ -36,11 +36,9 @@ samples = {
     },
 
 }
-
-data = []  # initialize empty awkard array called data
-BackgroundZt = []
-BackgroundZZ = []
-Signal = []
+data_final = {key: [] for key in samples.keys()}
+fraction = 0.1
+GeV = 1.0
 
 def callback(ch, method, properties, body):    
     global counter
@@ -48,34 +46,22 @@ def callback(ch, method, properties, body):
     val = body[-1]
     body = body[:-1]
     print('OUTPUTTER Received ' + val)
-
+    print("COUNTER = " + str(counter))
     if val in samples['data']['list']:
-        data.append(ak.Array(body))
+        data_final['data'].append(ak.Array(body))
     elif val in samples[r'Background $Z,t\bar{t}$']['list']:
-        BackgroundZt.append(ak.Array(body))
-    elif val in samples[r'Background $ZZ^*$']['list']:
-        BackgroundZZ.append(ak.Array(body))
-    elif val in samples[r'Signal ($m_H$ = 125 GeV)']['list']:
-        Signal.append(ak.Array(body))
+        data_final[r'Background $Z,t\bar{t}$'].append(ak.Array(body))
+    elif val in samples['Background $ZZ^*$']['list']:
+        data_final[r'Background $ZZ^*$'].append(ak.Array(body))
+    elif val in samples['Signal ($m_H$ = 125 GeV)']['list']:
+        data_final[r'Signal ($m_H$ = 125 GeV)'].append(ak.Array(body))
     counter += 1
     if counter == count_elements(samples):
+        for category,data in data_final.items():
+            data_final[category] = ak.concatenate(data)
         channel.stop_consuming()
-        data_concat = ak.concatenate(data)
-        BackgroundZt_concat = ak.concatenate(BackgroundZt)
-        BackgroundZZ_concat = ak.concatenate(BackgroundZZ)
-        Signal_concat = ak.concatenate(Signal)
-        data_to_plot = ak.concatenate([data_concat, BackgroundZt_concat, BackgroundZZ_concat, Signal_concat])
         print("Plotting data")
-        plot_data(data_to_plot)
-
-counter = 0
-
-params = pika.ConnectionParameters('year_4_project_2-rabbitmq-1')
-connection = pika.BlockingConnection(params)
-channel = connection.channel()
-channel.queue_declare(queue='output')
-channel.basic_consume(queue='output', auto_ack=True, on_message_callback=callback)
-channel.start_consuming()
+        plot_data(data_final)
 
 def plot_data(data):
 
@@ -204,3 +190,13 @@ def plot_data(data):
     plt.savefig("output.png")
 
     return
+
+counter = 0
+
+params = pika.ConnectionParameters('year_4_project_2-rabbitmq-1')
+connection = pika.BlockingConnection(params)
+channel = connection.channel()
+channel.queue_declare(queue='output')
+channel.basic_consume(queue='output', auto_ack=True, on_message_callback=callback)
+channel.start_consuming()
+
