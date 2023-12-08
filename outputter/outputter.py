@@ -61,7 +61,6 @@ def callback(ch, method, properties, body):
         plot_data(data_final)
 
 def plot_data(data):
-    print("INSIDE PLOTTING FUNCTION")
     xmin = 80 * GeV
     xmax = 250 * GeV
     step_size = 5 * GeV
