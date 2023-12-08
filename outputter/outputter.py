@@ -36,6 +36,8 @@ def callback(ch, method, properties, body):
     val = body[-1]
     body = body[:-1]
 
+    counter += 1
+    
     #print statements to check the data is being received
     print('OUTPUTTER Received ' + val)
     print("COUNTER = " + str(counter))
@@ -49,8 +51,6 @@ def callback(ch, method, properties, body):
         data_final[r'Background $ZZ^*$'].append(ak.Array(body))
     elif val in samples['Signal ($m_H$ = 125 GeV)']['list']:
         data_final[r'Signal ($m_H$ = 125 GeV)'].append(ak.Array(body))
-    
-    counter += 1
 
     #checks if all the data has been received, if so concatinates and plots
     if counter == count_elements(samples):
