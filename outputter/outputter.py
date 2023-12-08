@@ -40,7 +40,7 @@ def callback(ch, method, properties, body):
     
     #print statements to check the data is being received
     print('OUTPUTTER Received ' + val)
-    print("COUNTER = " + str(counter))
+    print("COUNTER = " + str(counter) + "of" + str(count_elements(samples)))
 
     #sorts the data into the correct category
     if val in samples['data']['list']:
