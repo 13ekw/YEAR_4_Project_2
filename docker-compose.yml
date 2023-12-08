@@ -61,5 +61,5 @@ services:
 
 networks:
   network_1:
-    driver: bridge
-    #attachable: true
+    driver: overlay
+    attachable: true
