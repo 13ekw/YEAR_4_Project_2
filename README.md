@@ -17,4 +17,4 @@ You will now see the print statments on the terminal showing the message passing
 Once the Program is complete the output plot will be saved to the folder you are in
 
 
-Note: you can also easilt alter the samples data by editing the samples json file
+Note: you can also easily alter add data by editing the samples json file
