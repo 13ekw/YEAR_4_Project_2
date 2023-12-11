@@ -6,5 +6,5 @@ ADD infofile.py ./
 # install dependent libraries
 RUN pip install uproot awkward vector pika
 # the command to run our program
-CMD [ "python", "./worker.py"]
+CMD [ "python", "-u", "./worker.py"]
 

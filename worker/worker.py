@@ -105,7 +105,7 @@ def read_file(path,sample):
     return data_final.to_list()
 
 # Establish a connection to the RabbitMQ server
-params = pika.ConnectionParameters('year_4_project_2-rabbitmq-1')
+params = pika.ConnectionParameters('year_4_project_2-rabbitmq-1', heartbeat=0)
 connection = pika.BlockingConnection(params)
 # Create a channel for communication
 channel = connection.channel()

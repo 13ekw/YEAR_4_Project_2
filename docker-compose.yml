@@ -1,6 +1,6 @@
 services:
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3-management    
     ports:
       - "15672:15672"
       - "5672:5672"
@@ -30,7 +30,7 @@ services:
     image: worker
     deploy:
       mode: replicated
-      replicas: 3
+      replicas: 2
     build: 
       context: ./
       dockerfile: ./worker/Dockerfile
@@ -61,5 +61,4 @@ services:
 
 networks:
   network_1:
-    driver: overlay
-    attachable: true
+    driver: bridge
